@@ -16,9 +16,7 @@ vcpkg_from_github(
     SHA512 68a8c261ea570790974769d6c0ca8138cf4242b79e9ff74a11b10d35a27f98ff24c03f3d05932ac46811c0ba7d1a094388ae8dbeb495fc8e723ad74695994d49
     HEAD_REF master
     PATCHES
-        # ${CMAKE_CURRENT_LIST_DIR}/disable-csharp-ext.patch
-        # ${CMAKE_CURRENT_LIST_DIR}/disable-csharp-ext-2.patch
-        # ${CMAKE_CURRENT_LIST_DIR}/fix-uwp.patch
+        ${CMAKE_CURRENT_LIST_DIR}/fix-uwp.patch
 )
 
 if(VCPKG_CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
@@ -67,7 +65,7 @@ vcpkg_fixup_cmake_targets(CONFIG_PATH "share/grpc")
 
 file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/grpc RENAME copyright)
 
-# Install tools and plugins
+# Install tools
 file(GLOB TOOLS "${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-rel/*.exe")
 if(TOOLS)
     file(MAKE_DIRECTORY ${CURRENT_PACKAGES_DIR}/tools/grpc)
@@ -75,12 +73,13 @@ if(TOOLS)
     vcpkg_copy_tool_dependencies(${CURRENT_PACKAGES_DIR}/tools/grpc)
 endif()
 
-if(NOT VCPKG_CMAKE_SYSTEM_NAME OR VCPKG_CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
-    file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/bin)
-    file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/bin)
-else()
-    SET(VCPKG_POLICY_EMPTY_PACKAGE enabled) # Leave the executable files in bin/ and debug/bin
+file(GLOB EXES "${CURRENT_PACKAGES_DIR}/bin/*.exe" "${CURRENT_PACKAGES_DIR}/debug/bin/*.exe")
+if(EXES)
+    file(REMOVE ${EXES})
 endif()
+
+# Ignore the C# extension DLL in bin/
+SET(VCPKG_POLICY_EMPTY_PACKAGE enabled)
 file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
 
 vcpkg_copy_pdbs()
