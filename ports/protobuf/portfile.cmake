@@ -7,46 +7,9 @@ vcpkg_from_github(
     SHA512 63cd799d5d6edbb05a87bc07992271c5bdb9595366d698b4dc5476cc89dc278d1c43186b9e56340958aefea2ce23e15a9c3a550158414add868b56e789ceafe4
     HEAD_REF master
     PATCHES
-        # "${CMAKE_CURRENT_LIST_DIR}/001-add-compiler-flag.patch"
-        # "${CMAKE_CURRENT_LIST_DIR}/export-ParseGeneratorParameter.patch"
         "${CMAKE_CURRENT_LIST_DIR}/js-embed.patch"
         "${CMAKE_CURRENT_LIST_DIR}/fix-uwp.patch"
-        # "${CMAKE_CURRENT_LIST_DIR}/wire_format_lite_h_fix_error_C4146.patch"
 )
-
-# set(PROTOBUF_VERSION 3.6.0.1)
-#set(PROTOC_VERSION 3.5.1)
-
-# vcpkg_download_distfile(ARCHIVE_FILE
-#     URLS "https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz"
-#     FILENAME "protobuf-cpp-${PROTOBUF_VERSION}.tar.gz"
-#     SHA512 195ccb210229e0a1080dcdb0a1d87b2e421ad55f6b036c56db3183bd50a942c75b4cc84e6af8a10ad88022a247781a06f609a145a461dfbb8f04051b7dd714b3
-# )
-# set(SOURCE_PATH ${CURRENT_BUILDTREES_DIR}/src/protobuf-${PROTOBUF_VERSION})
-
-# vcpkg_extract_source_archive(${ARCHIVE_FILE})
-
-# # Add a flag that can be set to disable the protobuf compiler
-# vcpkg_apply_patches(
-#     SOURCE_PATH ${CURRENT_BUILDTREES_DIR}/src/protobuf-${PROTOBUF_VERSION}
-#     PATCHES
-#         "${CMAKE_CURRENT_LIST_DIR}/001-add-compiler-flag.patch"
-#         "${CMAKE_CURRENT_LIST_DIR}/export-ParseGeneratorParameter.patch"
-#         "${CMAKE_CURRENT_LIST_DIR}/js-embed.patch"
-#         "${CMAKE_CURRENT_LIST_DIR}/fix-uwp.patch"
-#         "${CMAKE_CURRENT_LIST_DIR}/wire_format_lite_h_fix_error_C4146.patch"
-# )
-
-# if(CMAKE_HOST_WIN32)
-#     set(TOOL_PATH ${CURRENT_BUILDTREES_DIR}/src/protobuf-${PROTOBUF_VERSION}-win32)
-#     vcpkg_download_distfile(TOOL_ARCHIVE_FILE
-#         URLS "https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-win32.zip"
-#         FILENAME "protoc-${PROTOC_VERSION}-win32.zip"
-#         SHA512 27b1b82e92d82c35158362435a29f590961b91f68cda21bffe46e52271340ea4587c4e3177668809af0d053b61e6efa69f0f62156ea11393cd9e6eb4474a3049
-#     )
-
-#     vcpkg_extract_source_archive(${TOOL_ARCHIVE_FILE} ${TOOL_PATH})
-# endif()
 
 if(CMAKE_HOST_WIN32 AND NOT VCPKG_TARGET_ARCHITECTURE MATCHES "x64" AND NOT VCPKG_TARGET_ARCHITECTURE MATCHES "x86")
     set(protobuf_BUILD_PROTOC_BINARIES OFF)
@@ -120,15 +83,15 @@ endif()
 
 protobuf_try_remove_recurse_wait(${CURRENT_PACKAGES_DIR}/debug/share)
 
-if(protobuf_BUILD_PROTOC_BINARIES)
-    file(INSTALL ${CURRENT_PACKAGES_DIR}/bin/protoc.exe DESTINATION ${CURRENT_PACKAGES_DIR}/tools/protobuf)
-    vcpkg_copy_tool_dependencies(${CURRENT_PACKAGES_DIR}/tools/protobuf)
-else()
-    file(COPY ${CURRENT_INSTALLED_DIR}/../x86-windows/tools/protobuf DESTINATION ${CURRENT_PACKAGES_DIR}/tools)
-endif()
-
 if(CMAKE_HOST_WIN32)
-    if(VCPKG_LIBRARY_LINKAGE STREQUAL static)
+    if(protobuf_BUILD_PROTOC_BINARIES)
+        file(INSTALL ${CURRENT_PACKAGES_DIR}/bin/protoc.exe DESTINATION ${CURRENT_PACKAGES_DIR}/tools/protobuf)
+        vcpkg_copy_tool_dependencies(${CURRENT_PACKAGES_DIR}/tools/protobuf)
+    else()
+        file(COPY ${CURRENT_INSTALLED_DIR}/../x86-windows/tools/protobuf DESTINATION ${CURRENT_PACKAGES_DIR}/tools)
+    endif()
+
+    if(VCPKG_LIBRARY_LINKAGE STREQUAL "static")
         protobuf_try_remove_recurse_wait(${CURRENT_PACKAGES_DIR}/bin)
         protobuf_try_remove_recurse_wait(${CURRENT_PACKAGES_DIR}/debug/bin)
     else()
@@ -142,7 +105,7 @@ else()
     protobuf_try_remove_recurse_wait(${CURRENT_PACKAGES_DIR}/bin)
 endif()
 
-if(VCPKG_LIBRARY_LINKAGE STREQUAL dynamic)
+if(VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
     file(READ ${CURRENT_PACKAGES_DIR}/include/google/protobuf/stubs/platform_macros.h _contents)
     string(REPLACE "\#endif  // GOOGLE_PROTOBUF_PLATFORM_MACROS_H_" "\#define PROTOBUF_USE_DLLS\n\#endif  // GOOGLE_PROTOBUF_PLATFORM_MACROS_H_" _contents "${_contents}")
     file(WRITE ${CURRENT_PACKAGES_DIR}/include/google/protobuf/stubs/platform_macros.h "${_contents}")
