@@ -7,9 +7,9 @@ function(boost_modular_build)
 
     # Todo: this serves too similar a purpose as vcpkg_find_acquire_program()
     if(CMAKE_HOST_WIN32 AND VCPKG_CMAKE_SYSTEM_NAME AND NOT VCPKG_CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
-        get_filename_component(BOOST_BUILD_PATH "${CURRENT_INSTALLED_DIR}/../x86-windows/tools/boost-build" ABSOLUTE)
+        get_filename_component(BOOST_BUILD_PATH "${CURRENT_INSTALLED_DIR}/../${TARGET_TRIPLET}/tools/boost-build" ABSOLUTE)
     elseif(NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "x64" AND NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "x86")
-        get_filename_component(BOOST_BUILD_PATH "${CURRENT_INSTALLED_DIR}/../x86-windows/tools/boost-build" ABSOLUTE)
+        get_filename_component(BOOST_BUILD_PATH "${CURRENT_INSTALLED_DIR}/../${TARGET_TRIPLET}/tools/boost-build" ABSOLUTE)
     else()
         set(BOOST_BUILD_PATH "${CURRENT_INSTALLED_DIR}/tools/boost-build")
     endif()
@@ -35,9 +35,14 @@ function(boost_modular_build)
     set(REQUIREMENTS ${_bm_REQUIREMENTS})
 
     if(NOT VCPKG_CMAKE_SYSTEM_NAME OR VCPKG_CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
-        set(BOOST_LIB_PREFIX)
-        set(BOOST_LIB_RELEASE_SUFFIX -vc140-mt.lib)
-        set(BOOST_LIB_DEBUG_SUFFIX -vc140-mt-gd.lib)
+        set(BOOST_LIB_PREFIX lib)
+		if(VCPKG_PLATFORM_TOOLSET MATCHES "v141")
+			set(BOOST_LIB_RELEASE_SUFFIX -vc141-mt-x64-1_67.lib)
+			set(BOOST_LIB_DEBUG_SUFFIX -vc141-mt-gd-x64-1_67.lib)
+		else()
+			set(BOOST_LIB_RELEASE_SUFFIX -vc140-mt-x64-1_67.lib)
+			set(BOOST_LIB_DEBUG_SUFFIX -vc140-mt-gd-x64-1_67.lib)
+		endif()
     else()
         set(BOOST_LIB_PREFIX lib)
         set(BOOST_LIB_RELEASE_SUFFIX .a)
@@ -139,10 +144,10 @@ function(boost_modular_build)
         --debug-generators
         --disable-icu
         --ignore-site-config
-        --hash
+		--hash
         -q
-        -sZLIB_INCLUDE="${CURRENT_INSTALLED_DIR}/include"
-        -sBZIP2_INCLUDE="${CURRENT_INSTALLED_DIR}/include"
+	#	 -sZLIB_INCLUDE="${CURRENT_INSTALLED_DIR}/include"
+    #    -sBZIP2_INCLUDE="${CURRENT_INSTALLED_DIR}/include"
         threading=multi
     )
     if(NOT VCPKG_CMAKE_SYSTEM_NAME OR VCPKG_CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
@@ -150,19 +155,19 @@ function(boost_modular_build)
     else()
         list(APPEND _bm_OPTIONS threadapi=pthread)
     endif()
-    set(_bm_OPTIONS_DBG
-         -sZLIB_BINARY=zlibd
-         -sZLIB_LIBPATH="${CURRENT_INSTALLED_DIR}/debug/lib"
-         -sBZIP2_BINARY=bz2d
-         -sBZIP2_LIBPATH="${CURRENT_INSTALLED_DIR}/debug/lib"
-    )
- 
-    set(_bm_OPTIONS_REL
-         -sZLIB_BINARY=zlib
-         -sZLIB_LIBPATH="${CURRENT_INSTALLED_DIR}/lib"
-         -sBZIP2_BINARY=bz2
-         -sBZIP2_LIBPATH="${CURRENT_INSTALLED_DIR}/lib"
-    )
+    #set(_bm_OPTIONS_DBG
+    #     -sZLIB_BINARY=zlibd
+    #     -sZLIB_LIBPATH="${CURRENT_INSTALLED_DIR}/debug/lib"
+    #     -sBZIP2_BINARY=bz2d
+    #     -sBZIP2_LIBPATH="${CURRENT_INSTALLED_DIR}/debug/lib"
+    #)
+    #
+    #set(_bm_OPTIONS_REL
+    #     -sZLIB_BINARY=zlib
+    #     -sZLIB_LIBPATH="${CURRENT_INSTALLED_DIR}/lib"
+    #     -sBZIP2_BINARY=bz2
+    #     -sBZIP2_LIBPATH="${CURRENT_INSTALLED_DIR}/lib"
+    #)
 
 
     # Add build type specific options
@@ -234,9 +239,9 @@ function(boost_modular_build)
                 --build-dir=${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-rel
                 --user-config=${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-rel/user-config.jam
                 ${_bm_OPTIONS}
-                ${_bm_OPTIONS_REL}
+    #            ${_bm_OPTIONS_REL}
                 variant=release
-                debug-symbols=on
+    #            debug-symbols=on
             WORKING_DIRECTORY ${_bm_SOURCE_PATH}/build
             LOGNAME build-${TARGET_TRIPLET}-rel
         )
@@ -252,7 +257,7 @@ function(boost_modular_build)
                 --build-dir=${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-dbg
                 --user-config=${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-dbg/user-config.jam
                 ${_bm_OPTIONS}
-                ${_bm_OPTIONS_DBG}
+    #            ${_bm_OPTIONS_DBG}
                 variant=debug
             WORKING_DIRECTORY ${_bm_SOURCE_PATH}/build
             LOGNAME build-${TARGET_TRIPLET}-dbg
@@ -300,16 +305,17 @@ function(boost_modular_build)
     foreach(LIB ${INSTALLED_LIBS})
         get_filename_component(OLD_FILENAME ${LIB} NAME)
         get_filename_component(DIRECTORY_OF_LIB_FILE ${LIB} DIRECTORY)
-        string(REPLACE "libboost_" "boost_" NEW_FILENAME ${OLD_FILENAME})
+		set(NEW_FILENAME ${OLD_FILENAME})
+        #string(REPLACE "libboost_" "boost_" NEW_FILENAME ${OLD_FILENAME})
         string(REPLACE "-s-" "-" NEW_FILENAME ${NEW_FILENAME}) # For Release libs
-        string(REPLACE "-vc141-" "-vc140-" NEW_FILENAME ${NEW_FILENAME}) # To merge VS2017 and VS2015 binaries
+        #string(REPLACE "-vc141-" "-vc140-" NEW_FILENAME ${NEW_FILENAME}) # To merge VS2017 and VS2015 binaries
         string(REPLACE "-sgd-" "-gd-" NEW_FILENAME ${NEW_FILENAME}) # For Debug libs
         string(REPLACE "-sgyd-" "-gyd-" NEW_FILENAME ${NEW_FILENAME}) # For Debug libs
-        string(REPLACE "-x32-" "-" NEW_FILENAME ${NEW_FILENAME}) # To enable CMake 3.10 and earlier to locate the binaries
-        string(REPLACE "-x64-" "-" NEW_FILENAME ${NEW_FILENAME}) # To enable CMake 3.10 and earlier to locate the binaries
-        string(REPLACE "-a32-" "-" NEW_FILENAME ${NEW_FILENAME}) # To enable CMake 3.10 and earlier to locate the binaries
-        string(REPLACE "-a64-" "-" NEW_FILENAME ${NEW_FILENAME}) # To enable CMake 3.10 and earlier to locate the binaries
-        string(REPLACE "-1_67" "" NEW_FILENAME ${NEW_FILENAME}) # To enable CMake > 3.10 to locate the binaries
+        #string(REPLACE "-x32-" "-" NEW_FILENAME ${NEW_FILENAME}) # To enable CMake 3.10 and earlier to locate the binaries
+        #string(REPLACE "-x64-" "-" NEW_FILENAME ${NEW_FILENAME}) # To enable CMake 3.10 and earlier to locate the binaries
+        #string(REPLACE "-a32-" "-" NEW_FILENAME ${NEW_FILENAME}) # To enable CMake 3.10 and earlier to locate the binaries
+        #string(REPLACE "-a64-" "-" NEW_FILENAME ${NEW_FILENAME}) # To enable CMake 3.10 and earlier to locate the binaries
+        #string(REPLACE "-1_67" "" NEW_FILENAME ${NEW_FILENAME}) # To enable CMake > 3.10 to locate the binaries
         string(REPLACE "_python3-" "_python-" NEW_FILENAME ${NEW_FILENAME})
         if("${DIRECTORY_OF_LIB_FILE}/${NEW_FILENAME}" STREQUAL "${DIRECTORY_OF_LIB_FILE}/${OLD_FILENAME}")
             # nothing to do
