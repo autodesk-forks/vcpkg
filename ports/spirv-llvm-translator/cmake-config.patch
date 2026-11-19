@@ -1,0 +1,41 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7d52499..a142259 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -167,10 +167,23 @@ install(
+     ${CMAKE_INSTALL_PREFIX}/include/LLVMSPIRVLib
+ )
+ 
+-configure_file(LLVMSPIRVLib.pc.in ${CMAKE_BINARY_DIR}/LLVMSPIRVLib.pc @ONLY)
++target_include_directories(LLVMSPIRVLib INTERFACE $<INSTALL_INTERFACE:include>)
++install(TARGETS LLVMSPIRVLib EXPORT LLVMSPIRVLibTargets)
++install(
++  EXPORT LLVMSPIRVLibTargets
++  NAMESPACE LLVMSPIRVLib::
++  DESTINATION lib/cmake/LLVMSPIRVLib
++)
++include(CMakePackageConfigHelpers)
++configure_file(cmake/LLVMSPIRVLibConfig.cmake.in ${CMAKE_BINARY_DIR}/LLVMSPIRVLibConfig.cmake @ONLY)
++write_basic_package_version_file(
++  ${CMAKE_BINARY_DIR}/LLVMSPIRVLibConfigVersion.cmake
++  VERSION ${LLVM_SPIRV_VERSION}
++  COMPATIBILITY SameMinorVersion
++)
+ install(
+   FILES
+-    ${CMAKE_BINARY_DIR}/LLVMSPIRVLib.pc
+-  DESTINATION
+-    ${CMAKE_INSTALL_PREFIX}/lib${LLVM_LIBDIR_SUFFIX}/pkgconfig
++    ${CMAKE_BINARY_DIR}/LLVMSPIRVLibConfig.cmake
++    ${CMAKE_BINARY_DIR}/LLVMSPIRVLibConfigVersion.cmake
++  DESTINATION lib/cmake/LLVMSPIRVLib
+ )
+diff --git a/cmake/LLVMSPIRVLibConfig.cmake.in b/cmake/LLVMSPIRVLibConfig.cmake.in
+new file mode 100644
+index 0000000..f3d9998
+--- /dev/null
++++ b/cmake/LLVMSPIRVLibConfig.cmake.in
+@@ -0,0 +1,3 @@
++include(CMakeFindDependencyMacro)
++find_dependency(LLVM @LLVM_VERSION_MAJOR@.@LLVM_VERSION_MINOR@ CONFIG)
++include("${CMAKE_CURRENT_LIST_DIR}/LLVMSPIRVLibTargets.cmake")
